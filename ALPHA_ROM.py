@@ -150,7 +150,7 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
             alpha_term2 = inner(ubar[0]*(u[1].dx(0) - u[0].dx(1)),v[1])*dx
             alpha_term = alpha_term1 + alpha_term2
             c0 = inner(grad(u)*u, v)*dx
-            c0l = - inner(p + 0.5*inner(0.5*u,u), div(v))*dx + alpha_term
+            c0l = - inner(p + 0.5*inner(u,u), div(v))*dx + alpha_term
             cl1 =  inner(grad(ubar), grad(vbar))*dx # + inner(ubar,vbar)*dx - inner(u, vbar)*dx
             cl2 =  inner(ubar,vbar)*dx - inner(u, vbar)*dx
             return (c0,c0l, cl1, cl2)
