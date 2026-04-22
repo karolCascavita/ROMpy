@@ -209,11 +209,15 @@ def CustomizeReducedNavierStokesUnsteady(ReducedNavierStokesUnsteady_Base):
             
     return ReducedNavierStokesUnsteady
 
+
+
+mypath = ""
+
 # 1. Read the mesh for this problem
-mesh = Mesh("/beegfs/users/mstrazzullo/RBniCS/Birgul/data_cylinder/Cylinder_refined_Michele_fine120.xml")
+mesh = Mesh(mypath + "data_cylinder/Cylinder_refined_Michele_fine120.xml")
 print(mesh.hmax(), mesh.hmin())
-subdomains = MeshFunction("size_t", mesh, "/beegfs/users/mstrazzullo/RBniCS/Birgul/data_cylinder/Cylinder_refined_physical_region_Michele_fine120.xml")
-boundaries = MeshFunction("size_t", mesh, "/beegfs/users/mstrazzullo/RBniCS/Birgul/data_cylinder/Cylinder_refined_facet_region_Michele_fine120.xml")
+subdomains = MeshFunction("size_t", mesh, mypath + "data_cylinder/Cylinder_refined_physical_region_Michele_fine120.xml")
+boundaries = MeshFunction("size_t", mesh, mypath + "data_cylinder/Cylinder_refined_facet_region_Michele_fine120.xml")
 
 # 2. Create Finite Element space for Stokes problem (Taylor-Hood P2-P1)
 element_u = VectorElement("Lagrange", mesh.ufl_cell(), 2)
