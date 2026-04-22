@@ -77,9 +77,15 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
         if term == "a":
             theta_a0 = self.nu
             return (theta_a0,)
-        elif term in ("b", "bt"):
+        elif term == "b":
             theta_b0 = 1.
             return (theta_b0,)
+        elif term == "bt":
+            if self.offline;
+                theta_bt0 = 1.
+            else:
+                theta_bt0 = 0.    
+            return (theta_bt0,)
         elif term == "c":
             if self.offline:
                 print("OFFLINE")
