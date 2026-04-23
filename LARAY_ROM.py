@@ -35,7 +35,7 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
         self.mesh = kwargs["mesh"]         
         self.subdomains = kwargs["subdomains"]
         self.boundaries = kwargs["boundaries"]
-        self.testcasei  = kwargs["testcase"]
+        self.testcase   = kwargs["testcase"]
 
         self._solution.assign(self.testcase.InitialCondition(V))
         
@@ -223,6 +223,7 @@ element = MixedElement(element_u, element_u, element_p)
 V = FunctionSpace(testcase.mesh, element, components=[["u", "s"], "u_bar", "p"])
 
 # 3. Allocate an object of the NavierStokesUnsteady class
+print("START fluid-dynamics solver")
 navier_stokes_unsteady_problem = NavierStokesUnsteady(V, testcase=testcase, 
                                                       subdomains=testcase.subdomains, 
                                                       boundaries=testcase.boundaries, 
@@ -230,7 +231,8 @@ navier_stokes_unsteady_problem = NavierStokesUnsteady(V, testcase=testcase,
 mu_range = []
 navier_stokes_unsteady_problem.set_mu_range(mu_range)
 navier_stokes_unsteady_problem.set_time_step_size(4e-4)
-navier_stokes_unsteady_problem.set_final_time(2.)
+navier_stokes_unsteady_problem.set_final_time(2.0)
+print("END fluid-dynamics solver ")
 
 # 4. Prepare reduction with a POD-Galerkin method
 pod_galerkin_method = PODGalerkin(navier_stokes_unsteady_problem)

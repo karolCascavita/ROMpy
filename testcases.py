@@ -52,8 +52,7 @@ class CylinderFlowCase(TestCase):
 
     def BoundaryConditions(self, V, boundaries):
         self.inlet = Expression(("6.0/((0.41)*(0.41))*x[1]*(0.41 - x[1])", "0."), 
-                                element=V.sub(0).ufl_element(),
-                                degree=2)
+                                element=V.sub(0).ufl_element())
 
         bc0 = [DirichletBC(V.sub(0), Constant((0.0, 0.0)), boundaries, 1),
                DirichletBC(V.sub(0), Constant((0.0, 0.0)), boundaries, 4), 
