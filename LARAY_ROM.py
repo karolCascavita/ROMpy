@@ -76,8 +76,15 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
              
     # Return custom problem name
     def name(self):
-        return "LarayROM"
-        
+        testcase = getattr(self, "testcase", None)
+        if testcase is None:
+            return "LarayROM"
+        elif hasattr(self, "output_dir") and self.output_dir:
+            return "LarayROM_" + testcase.name()+"/" + self.output_dir
+        else:
+            return "LarayROM_" + testcase.name()        
+
+
     # Return theta multiplicative terms of the affine expansion of the problem.
     @compute_theta_for_derivatives
     @compute_theta_for_supremizers
