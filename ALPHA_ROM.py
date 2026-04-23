@@ -81,7 +81,7 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
             theta_b0 = 1.
             return (theta_b0,)
         elif term == "bt":
-            if self.offline;
+            if self.offline:
                 theta_bt0 = 1.
             else:
                 theta_bt0 = 0.    

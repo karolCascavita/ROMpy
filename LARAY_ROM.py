@@ -247,4 +247,3 @@ for j in [20]:
     reduced_navier_stokes_unsteady_problem.solve(u = k, s=k_p, p=k_p)
     reduced_navier_stokes_unsteady_problem.export_solution(filename="online_solution" + str(k) + delta_str)
 
-AAAAAAAAAAAAAA
