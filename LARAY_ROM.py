@@ -18,17 +18,23 @@
 
 from dolfin import *
 from rbnics import *
+from tescases import *
+
 
 @ExactParametrizedFunctions()
 class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
     
     # Default initialization of members
-    def __init__(self, V, **kwargs):
+    def __init__(self, V, testcase, **kwargs):
         # Call the standard initialization
         NavierStokesUnsteadyProblem.__init__(self, V, **kwargs)
         # ... and also store FEniCS data structures for assembly
         assert "subdomains" in kwargs
         assert "boundaries" in kwargs
+
+        self.testcase = testcase
+        self._solution.assign(self.problem.initial_condition(V))
+           
         self.subdomains, self.boundaries = kwargs["subdomains"], kwargs["boundaries"]
         self.mesh = kwargs["mesh"]
         self.dup = TrialFunction(V)
@@ -39,9 +45,8 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
         self.dx = Measure("dx")(subdomain_data=self.subdomains)
         self.ds = Measure("ds")(subdomain_data=self.boundaries)
         #
-        self.inlet = Expression(("6/((0.41)*(0.41))*x[1]*(0.41 - x[1])", "0."), element=V.sub(0).ufl_element())
-        self.f = Constant((0.0, 0.0))
-        self.g = Constant(0.0)
+        self.f = testcase.Forcing()
+        self.g = testcase.g()
         
         self.hmin = self.mesh.hmin()
         self.delta = 2*self.hmin**2
@@ -68,7 +73,7 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
              
     # Return custom problem name
     def name(self):
-        return "LarayROM"
+        return "LarayROM_" + self.testcase.name
         
     # Return theta multiplicative terms of the affine expansion of the problem.
     @compute_theta_for_derivatives
@@ -108,7 +113,7 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
             theta_bc0 = 1. # 6/((0.41)*(0.41))
             return (theta_bc0,)
         elif term == "dirichlet_bc_ubar":
-            theta_bc00 = 1. 
+            theta_bc00 = 1.
             return (theta_bc00,)
         else:
             raise ValueError("Invalid term for compute_theta().")
@@ -139,10 +144,10 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
             v = self.v
             ubar = self.ubar
             vbar = self.vbar
-            c0 = inner(grad(u)*u, v)*dx
+            c0  = inner(grad(u)*u, v)*dx
             c0l = inner(grad(ubar)*u, v)*dx
-            cl1 =  inner(grad(ubar), grad(vbar))*dx # + inner(ubar,vbar)*dx - inner(u, vbar)*dx
-            cl2 =  inner(ubar,vbar)*dx - inner(u, vbar)*dx
+            cl1 = inner(grad(ubar), grad(vbar))*dx # + inner(ubar,vbar)*dx - inner(u, vbar)*dx
+            cl2 = inner(ubar,vbar)*dx - inner(u, vbar)*dx
             return (c0,c0l, cl1, cl2)
         elif term == "f":
             v = self.v
@@ -169,11 +174,10 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
             filter0 = inner(u, v)*dx
             return (filter0,)
         elif term == "dirichlet_bc_u":
-            bc0 = [DirichletBC(self.V.sub(0), Constant((0.0, 0.0)), self.boundaries, 1), DirichletBC(self.V.sub(0), Constant((0.0, 0.0)), self.boundaries, 4), DirichletBC(self.V.sub(0), self.inlet, self.boundaries, 3)]
+            bc0 = self.testcase.BoundaryConditions(self.V, self.boundaries)
             return (bc0,)
         elif term == "dirichlet_bc_ubar":
-            bc0 = [DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 3),
-                   DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1), DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4)]
+            bc0 = self.testcase.BoundaryConditionsUbar(self.V, self.boundaries)
             return (bc0,)
         elif term == "inner_product_u":
             u = self.du
@@ -206,28 +210,28 @@ def CustomizeReducedNavierStokesUnsteady(ReducedNavierStokesUnsteady_Base):
     return ReducedNavierStokesUnsteady
 
 
-mypath = ""
 
-# 1. Read the mesh for this problem
-mesh = Mesh(mypath + "data_cylinder/Cylinder_refined_Michele.xml")
-print(mesh.hmax(), mesh.hmin())
-subdomains = MeshFunction("size_t", mesh, mypath + "data_cylinder/Cylinder_refined_physical_region_Michele.xml")
-boundaries = MeshFunction("size_t", mesh, mypath + "data_cylinder/Cylinder_refined_facet_region_Michele.xml")
+# 0 Create case
+testcase = CylinderFlowCase("Michele")
 
 # 2. Create Finite Element space for Stokes problem (Taylor-Hood P2-P1)
-element_u = VectorElement("Lagrange", mesh.ufl_cell(), 2)
-element_p = FiniteElement("Lagrange", mesh.ufl_cell(), 1)
+element_u = VectorElement("Lagrange", testcase.mesh.ufl_cell(), 2)
+element_p = FiniteElement("Lagrange", testcase.mesh.ufl_cell(), 1)
 element = MixedElement(element_u, element_u, element_p)
-V = FunctionSpace(mesh, element, components=[["u", "s"], "u_bar", "p"])
+V = FunctionSpace(testcase.mesh, element, components=[["u", "s"], "u_bar", "p"])
+
+
 # 3. Allocate an object of the NavierStokesUnsteady class
-navier_stokes_unsteady_problem = NavierStokesUnsteady(V, subdomains=subdomains, boundaries=boundaries, mesh=mesh)
+navier_stokes_unsteady_problem = NavierStokesUnsteady(V, testcase, 
+                                                      subdomains=testcase.subdomains, 
+                                                      boundaries=testcase.boundaries, 
+                                                      mesh=testcase.mesh)
 mu_range = []
 navier_stokes_unsteady_problem.set_mu_range(mu_range)
 navier_stokes_unsteady_problem.set_time_step_size(4e-4)
 navier_stokes_unsteady_problem.set_final_time(2.)
 
 # 4. Prepare reduction with a POD-Galerkin method
-
 pod_galerkin_method = PODGalerkin(navier_stokes_unsteady_problem)
 pod_galerkin_method.set_Nmax(200)
 
@@ -237,6 +241,7 @@ pod_galerkin_method.set_Nmax(200)
 pod_galerkin_method.initialize_training_set(1)
 reduced_navier_stokes_unsteady_problem = pod_galerkin_method.offline()
 navier_stokes_unsteady_problem.offline = False
+
 # 6. Perform an online solve
 # online_mu = (1e-2, )
 # reduced_navier_stokes_unsteady_problem.set_mu(online_mu)
