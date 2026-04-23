@@ -3,6 +3,8 @@
 #
 #
 #
+from dolfin import *
+
 
 class TestCase:
     
@@ -18,7 +20,7 @@ class TestCase:
     def Forcing(self, V): 
         return Constant((0.0, 0.0))    
 
-    def g(self,V)
+    def g(self,V):
         return Constant(0.0)    
 
     def has_exact_solution(self):
@@ -35,17 +37,13 @@ class TestCase:
 
 class CylinderFlowCase(TestCase):
     def __init__(self, mesh_specific_name):
-        self.inlet = Expression(("6.0/((0.41)*(0.41))*x[1]*(0.41 - x[1])", "0."), 
-                                element=V.sub(0).ufl_element(),
-                                degree=2)
-
         # Read the mesh for this problem
         path = "data_cylinder"
   
-        self.mesh = Mesh(path+"/Cylinder_refined"+ mesh_specific_name +".xml")
-        self.subdomains = MeshFunction("size_t", mesh, path+"/Cylinder_refined_physical_region"+ mesh_specific_name +" .xml")
-        self.boundaries = MeshFunction("size_t", mesh, path+"/Cylinder_refined_facet_region"+mesh_specific_name + ".xml")
-        print(mesh.hmax(), mesh.hmin())
+        self.mesh = Mesh("/beegfs/users/kcascavita/CODES/ROMpy/data_cylinder/Cylinder_refined_Michele.xml")
+        self.subdomains = MeshFunction("size_t", self.mesh, "/beegfs/users/kcascavita/CODES/ROMpy/data_cylinder/Cylinder_refined_physical_region_Michele.xml")
+        self.boundaries = MeshFunction("size_t", self.mesh, path+"/Cylinder_refined_facet_region_"+mesh_specific_name + ".xml")
+        print(self.mesh.hmax(), self.mesh.hmin())
 
 
     def InitialCondition(self, V):
@@ -53,6 +51,9 @@ class CylinderFlowCase(TestCase):
         return solution
 
     def BoundaryConditions(self, V, boundaries):
+        self.inlet = Expression(("6.0/((0.41)*(0.41))*x[1]*(0.41 - x[1])", "0."), 
+                                element=V.sub(0).ufl_element(),
+                                degree=2)
 
         bc0 = [DirichletBC(V.sub(0), Constant((0.0, 0.0)), boundaries, 1),
                DirichletBC(V.sub(0), Constant((0.0, 0.0)), boundaries, 4), 
@@ -60,13 +61,13 @@ class CylinderFlowCase(TestCase):
         
         return bc0
 
-   def BoundaryConditionsUbar(self, V, boundaries):
+    def BoundaryConditionsUbar(self, V, boundaries):
         bc0 = [DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 3),
                DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1), 
                DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4)]
         return bc0
 
-   def name(self):
+    def name(self):
         return "Cylinder" 
 
 
@@ -77,7 +78,7 @@ class TaylorVortexCase(TestCase):
         self.u_exact = Expression(
             ("-cos(n*pi*x[0])*sin(n*pi*x[1])*exp(-2.0*n*n*pi*pi*t/Re)",
              " sin(n*pi*x[0])*cos(n*pi*x[1])*exp(-2.0*n*n*pi*pi*t/Re)"),
-            degree=5, pi=np.pi, nu=self.nu,n=n t=0.0
+            degree=5, pi=np.pi, nu=self.nu,n=n, t=0.0
         )
         self.p_exact = Expression(
             "-0.25*(cos(2.0*n*pi*x[0]) + cos(2.0*n*pi*x[1]))*exp(-4.0*n*n*pi*pi*t/Re)",

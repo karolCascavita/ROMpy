@@ -18,35 +18,38 @@
 
 from dolfin import *
 from rbnics import *
-from tescases import *
+from testcases import *
 
 
 @ExactParametrizedFunctions()
 class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
     
     # Default initialization of members
-    def __init__(self, V, testcase, **kwargs):
+    def __init__(self, V, **kwargs):
         # Call the standard initialization
         NavierStokesUnsteadyProblem.__init__(self, V, **kwargs)
         # ... and also store FEniCS data structures for assembly
         assert "subdomains" in kwargs
         assert "boundaries" in kwargs
 
-        self.testcase = testcase
-        self._solution.assign(self.problem.initial_condition(V))
-           
-        self.subdomains, self.boundaries = kwargs["subdomains"], kwargs["boundaries"]
-        self.mesh = kwargs["mesh"]
+        self.mesh = kwargs["mesh"]         
+        self.subdomains = kwargs["subdomains"]
+        self.boundaries = kwargs["boundaries"]
+        self.testcasei  = kwargs["testcase"]
+
+        self._solution.assign(self.testcase.InitialCondition(V))
+        
         self.dup = TrialFunction(V)
         (self.du, self.dubar, self.dp) = split(self.dup)
-        (self.u, self.ubar, self.p) = split(self._solution)
+        (self.u , self.ubar , self.p)  = split(self._solution)
+        
         vq = TestFunction(V)
         (self.v, self.vbar, self.q) = split(vq)
         self.dx = Measure("dx")(subdomain_data=self.subdomains)
         self.ds = Measure("ds")(subdomain_data=self.boundaries)
         #
-        self.f = testcase.Forcing()
-        self.g = testcase.g()
+        self.f = testcase.Forcing(V)
+        self.g = testcase.g(V)
         
         self.hmin = self.mesh.hmin()
         self.delta = 2*self.hmin**2
@@ -73,7 +76,7 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
              
     # Return custom problem name
     def name(self):
-        return "LarayROM_" + self.testcase.name
+        return "LarayROM"
         
     # Return theta multiplicative terms of the affine expansion of the problem.
     @compute_theta_for_derivatives
@@ -210,7 +213,6 @@ def CustomizeReducedNavierStokesUnsteady(ReducedNavierStokesUnsteady_Base):
     return ReducedNavierStokesUnsteady
 
 
-
 # 0 Create case
 testcase = CylinderFlowCase("Michele")
 
@@ -220,9 +222,8 @@ element_p = FiniteElement("Lagrange", testcase.mesh.ufl_cell(), 1)
 element = MixedElement(element_u, element_u, element_p)
 V = FunctionSpace(testcase.mesh, element, components=[["u", "s"], "u_bar", "p"])
 
-
 # 3. Allocate an object of the NavierStokesUnsteady class
-navier_stokes_unsteady_problem = NavierStokesUnsteady(V, testcase, 
+navier_stokes_unsteady_problem = NavierStokesUnsteady(V, testcase=testcase, 
                                                       subdomains=testcase.subdomains, 
                                                       boundaries=testcase.boundaries, 
                                                       mesh=testcase.mesh)
