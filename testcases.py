@@ -36,13 +36,13 @@ class TestCase:
         return NotImplementedError
 
 class CylinderFlowCase(TestCase):
-    def __init__(self, mesh_specific_name):
+    def __init__(self, mesh_label):
         # Read the mesh for this problem
         path = "data_cylinder"
   
-        self.mesh = Mesh("/beegfs/users/kcascavita/CODES/ROMpy/data_cylinder/Cylinder_refined_Michele.xml")
-        self.subdomains = MeshFunction("size_t", self.mesh, "/beegfs/users/kcascavita/CODES/ROMpy/data_cylinder/Cylinder_refined_physical_region_Michele.xml")
-        self.boundaries = MeshFunction("size_t", self.mesh, path+"/Cylinder_refined_facet_region_"+mesh_specific_name + ".xml")
+        self.mesh = Mesh("data_cylinder/Cylinder_refined_"+mesh_label+".xml")
+        self.subdomains = MeshFunction("size_t", self.mesh, path+"/Cylinder_refined_physical_region_"+mesh_label+".xml")
+        self.boundaries = MeshFunction("size_t", self.mesh, path+"/Cylinder_refined_facet_region_"+mesh_label + ".xml")
         print(self.mesh.hmax(), self.mesh.hmin())
 
 
