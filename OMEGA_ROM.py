@@ -233,12 +233,15 @@ def CustomizeReducedNavierStokesUnsteady(ReducedNavierStokesUnsteady_Base):
 testcase = CylinderFlowCase("Michele_fine120")
 
 # 2. Create Finite Element space for Stokes problem (Taylor-Hood P2-P1)
-element_u = VectorElement("Lagrange", mesh.ufl_cell(), 2)
-element_p = FiniteElement("Lagrange", mesh.ufl_cell(), 1)
+element_u = VectorElement("Lagrange", testcase.mesh.ufl_cell(), 2)
+element_p = FiniteElement("Lagrange", testcase.mesh.ufl_cell(), 1)
 element = MixedElement(element_u, element_u, element_p)
-V = FunctionSpace(mesh, element, components=[["u", "s"], "u_bar", "p"])
+V = FunctionSpace(testcase.mesh, element, components=[["u", "s"], "u_bar", "p"])
 # 3. Allocate an object of the NavierStokesUnsteady class
-navier_stokes_unsteady_problem = NavierStokesUnsteady(V, subdomains=subdomains, boundaries=boundaries, mesh=mesh)
+navier_stokes_unsteady_problem = NavierStokesUnsteady(V, testcase=testcase, 
+                                                      subdomains=testcase.subdomains, 
+                                                      boundaries=testcase.boundaries, 
+                                                      mesh=testcase.mesh)
 mu_range = []
 navier_stokes_unsteady_problem.set_mu_range(mu_range)
 navier_stokes_unsteady_problem.set_time_step_size(4e-4)
