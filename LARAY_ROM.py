@@ -20,7 +20,6 @@ from dolfin import *
 from rbnics import *
 from testcases import *
 
-
 @ExactParametrizedFunctions()
 class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
     

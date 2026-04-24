@@ -29,19 +29,25 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
         # ... and also store FEniCS data structures for assembly
         assert "subdomains" in kwargs
         assert "boundaries" in kwargs
-        self.subdomains, self.boundaries = kwargs["subdomains"], kwargs["boundaries"]
-        self.mesh = kwargs["mesh"]
+
+        self.mesh = kwargs["mesh"]         
+        self.subdomains = kwargs["subdomains"]
+        self.boundaries = kwargs["boundaries"]
+        self.testcase   = kwargs["testcase"]
+
+        self._solution.assign(self.testcase.InitialCondition(V))
+        
         self.dup = TrialFunction(V)
         (self.du, self.dubar, self.dp) = split(self.dup)
-        (self.u, self.ubar, self.p) = split(self._solution)
+        (self.u , self.ubar , self.p ) = split(self._solution)
+
         vq = TestFunction(V)
         (self.v, self.vbar, self.q) = split(vq)
         self.dx = Measure("dx")(subdomain_data=self.subdomains)
         self.ds = Measure("ds")(subdomain_data=self.boundaries)
         #
-        self.inlet = Expression(("6/((0.41)*(0.41))*x[1]*(0.41 - x[1])", "0."), element=V.sub(0).ufl_element())
-        self.f = Constant((0.0, 0.0))
-        self.g = Constant(0.0)
+        self.f = testcase.Forcing(V)
+        self.g = testcase.g(V)
         
         self.hmin = self.mesh.hmin()
         self.delta = 2*self.hmin**2
@@ -68,7 +74,13 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
              
     # Return custom problem name
     def name(self):
-        return "OMEGAROM"
+        testcase = getattr(self, "testcase", None)
+        if testcase is None:
+            return "OMEGAROM"
+        elif hasattr(self, "output_dir") and self.output_dir:
+            return "OMEGAROM_" + testcase.name()+"/" + self.output_dir
+        else:
+            return "OMEGAROM_" + testcase.name()        
         
     # Return theta multiplicative terms of the affine expansion of the problem.
     @compute_theta_for_derivatives
@@ -216,13 +228,9 @@ def CustomizeReducedNavierStokesUnsteady(ReducedNavierStokesUnsteady_Base):
     return ReducedNavierStokesUnsteady
 
 
-mypath = ""
 
-# 1. Read the mesh for this problem
-mesh = Mesh(mypath + "data_cylinder/Cylinder_refined_Michele_fine120.xml")
-print(mesh.hmax(), mesh.hmin())
-subdomains = MeshFunction("size_t", mesh, mypath + "data_cylinder/Cylinder_refined_physical_region_Michele_fine120.xml")
-boundaries = MeshFunction("size_t", mesh, mypath + "data_cylinder/Cylinder_refined_facet_region_Michele_fine120.xml")
+# 1. Create case
+testcase = CylinderFlowCase("Michele_fine120")
 
 # 2. Create Finite Element space for Stokes problem (Taylor-Hood P2-P1)
 element_u = VectorElement("Lagrange", mesh.ufl_cell(), 2)
