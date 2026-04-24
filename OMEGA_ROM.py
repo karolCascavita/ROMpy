@@ -18,6 +18,8 @@
 
 from dolfin import *
 from rbnics import *
+from testcases import *
+
 
 @ExactParametrizedFunctions()
 class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
@@ -191,11 +193,10 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
             filter0 = inner(u, v)*dx
             return (filter0,)
         elif term == "dirichlet_bc_u":
-            bc0 = [DirichletBC(self.V.sub(0), Constant((0.0, 0.0)), self.boundaries, 1), DirichletBC(self.V.sub(0), Constant((0.0, 0.0)), self.boundaries, 4), DirichletBC(self.V.sub(0), self.inlet, self.boundaries, 3)]
+            bc0 = self.testcase.BoundaryConditions(self.V)
             return (bc0,)
         elif term == "dirichlet_bc_ubar":
-            bc0 = [DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 3),
-                   DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1), DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4)]
+            bc0 = self.testcase.BoundaryConditionsUbar(self.V)
             return (bc0,)
         elif term == "inner_product_u":
             u = self.du
@@ -237,8 +238,11 @@ element_u = VectorElement("Lagrange", testcase.mesh.ufl_cell(), 2)
 element_p = FiniteElement("Lagrange", testcase.mesh.ufl_cell(), 1)
 element = MixedElement(element_u, element_u, element_p)
 V = FunctionSpace(testcase.mesh, element, components=[["u", "s"], "u_bar", "p"])
+
 # 3. Allocate an object of the NavierStokesUnsteady class
-navier_stokes_unsteady_problem = NavierStokesUnsteady(V, testcase=testcase, 
+print("START fluid-dynamics solver")
+navier_stokes_unsteady_problem = NavierStokesUnsteady(V, 
+                                                      testcase=testcase,  
                                                       subdomains=testcase.subdomains, 
                                                       boundaries=testcase.boundaries, 
                                                       mesh=testcase.mesh)

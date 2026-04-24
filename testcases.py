@@ -11,10 +11,10 @@ class TestCase:
     def InitialCondition(self, V):
         return NotImplementedError        
             
-    def BoundaryConditions(self, V, boundaries):
+    def BoundaryConditions(self,V):
         return NotImplementedError
     
-    def BoundaryConditionsUbar(self, V, boundaries):
+    def BoundaryConditionsUbar(self, V):
         return NotImplementedError
 
     def Forcing(self, V): 
@@ -50,20 +50,20 @@ class CylinderFlowCase(TestCase):
         solution  = Function(V)
         return solution
 
-    def BoundaryConditions(self, V, boundaries):
+    def BoundaryConditions(self,V):
         self.inlet = Expression(("6.0/((0.41)*(0.41))*x[1]*(0.41 - x[1])", "0."), 
                                 element=V.sub(0).ufl_element())
 
-        bc0 = [DirichletBC(V.sub(0), Constant((0.0, 0.0)), boundaries, 1),
-               DirichletBC(V.sub(0), Constant((0.0, 0.0)), boundaries, 4), 
-               DirichletBC(V.sub(0), self.inlet          , boundaries, 3)]
+        bc0 = [DirichletBC(V.sub(0), Constant((0.0, 0.0)), self.boundaries, 1),
+               DirichletBC(V.sub(0), Constant((0.0, 0.0)), self.boundaries, 4), 
+               DirichletBC(V.sub(0), self.inlet          , self.boundaries, 3)]
         
         return bc0
 
-    def BoundaryConditionsUbar(self, V, boundaries):
-        bc0 = [DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 3),
-               DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1), 
-               DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4)]
+    def BoundaryConditionsUbar(self,V):
+        bc0 = [DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 3),
+               DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1), 
+               DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4)]
         return bc0
 
     def name(self):
@@ -107,15 +107,17 @@ class TaylorVortexCase(TestCase):
         assigner.assign(solution, [u_init, u_bar_init_p_init])
         return solution
 
-    def BoundaryConditions(self, V, boundaries):
-        return [DirichletBC(V.sub(0), self.u_exact, boundaries, "on_boundary")]
+    def BoundaryConditions(self, V):
+        return [DirichletBC(V.sub(0), self.u_exact, self.boundaries, "on_boundary")]
 
-    def BoundaryConditionsUbar(self, V, boundaries):
-        bc0 = [DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 3),
-               DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1), 
-               DirichletBC(self.V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4)]
-        return [DirichletBC(V.sub(0), self.u_exact, boundaries, "on_boundary")]
-         #return bc0
+    def BoundaryConditionsUbar(self, V):
+
+        #bc0 = [DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 3),
+        #       DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1), 
+        #       DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4)]
+        #Check this! It must be zero on the boundary?
+
+        return [DirichletBC(V.sub(0), self.u_exact, self.boundaries, "on_boundary")]
 
     def ExactSolution(self, t):
         self.u_exact.t = t

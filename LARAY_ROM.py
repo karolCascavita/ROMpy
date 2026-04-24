@@ -183,10 +183,10 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
             filter0 = inner(u, v)*dx
             return (filter0,)
         elif term == "dirichlet_bc_u":
-            bc0 = self.testcase.BoundaryConditions(self.V, self.boundaries)
+            bc0 = self.testcase.BoundaryConditions(self.V)
             return (bc0,)
         elif term == "dirichlet_bc_ubar":
-            bc0 = self.testcase.BoundaryConditionsUbar(self.V, self.boundaries)
+            bc0 = self.testcase.BoundaryConditionsUbar(self.V)
             return (bc0,)
         elif term == "inner_product_u":
             u = self.du
