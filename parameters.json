@@ -1,0 +1,18 @@
+{
+    "physics": {
+        "viscosity": 1e-3
+    },
+    "fom": {
+        "dt": 4e-4,
+        "t_final": 2.0,
+        "monitor": {
+            "initial_time":  0,
+            "time_step_size": 4e-3
+        }
+    },
+    "rom": {
+        "Nmax": 200
+    },
+
+    "output_dir": "APR24"
+}
