@@ -5,6 +5,7 @@
     "fom": {
         "dt": 4e-4,
         "t_final": 2.0,
+        "meshname": "MESHNAME", 
         "monitor": {
             "initial_time":  0,
             "time_step_size": 4e-3
@@ -14,5 +15,5 @@
         "Nmax": 200
     },
 
-    "output_dir": "APR24"
+    "output_dir": "CYLINDER_H1"
 }

@@ -30,6 +30,10 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
     
     # Default initialization of members
     def __init__(self, V, **kwargs):
+
+        self.testcase   = kwargs["testcase"]
+        self.parameters = kwargs["parameters"]    
+
         # Call the standard initialization
         NavierStokesUnsteadyProblem.__init__(self, V, **kwargs)
         # ... and also store FEniCS data structures for assembly
@@ -39,8 +43,6 @@ class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
         self.mesh = kwargs["mesh"]         
         self.subdomains = kwargs["subdomains"]
         self.boundaries = kwargs["boundaries"]
-        self.parameters = kwargs["parameters"]    
-        self.testcase   = kwargs["testcase"]
 
         self._solution.assign(self.testcase.InitialCondition(V))
         
@@ -243,7 +245,8 @@ with open("parameters.json", "r") as f:
     params = json.load(f)
 
 # 1. Create case
-testcase = CylinderFlowCase("Michele_fine120")
+testcase = CylinderFlowCase(params["fom"]["meshname"])
+print("1. MESH and BC's done")
 
 # 2. Create Finite Element space for Stokes problem (Taylor-Hood P2-P1)
 element_u = VectorElement("Lagrange", testcase.mesh.ufl_cell(), 2)
@@ -252,7 +255,7 @@ element = MixedElement(element_u, element_u, element_p)
 V = FunctionSpace(testcase.mesh, element, components=[["u", "s"], "u_bar", "p"])
 
 # 3. Allocate an object of the NavierStokesUnsteady class
-print("START fluid-dynamics solver")
+print("2. START fluid-dynamics solver")
 navier_stokes_unsteady_problem = NavierStokesUnsteady(V, parameters= params,
                                                       testcase=testcase,  
                                                       subdomains=testcase.subdomains, 
@@ -262,15 +265,16 @@ mu_range = []
 navier_stokes_unsteady_problem.set_mu_range(mu_range)
 navier_stokes_unsteady_problem.set_time_step_size(params["fom"]["dt"])
 navier_stokes_unsteady_problem.set_final_time(params["fom"]["t_final"])
-print("END fluid-dynamics solver ")
+print("2. END fluid-dynamics solver ")
+
 #  copy config file to results folder
 output_dir = navier_stokes_unsteady_problem.name()
 shutil.copy("parameters.json", os.path.join(output_dir, "parameters.json"))
 
 # 4. Prepare reduction with a POD-Galerkin method
-
 pod_galerkin_method = PODGalerkin(navier_stokes_unsteady_problem)
 pod_galerkin_method.set_Nmax(params["rom"]["Nmax"])
+print("3: POD prepared")
 
 # 5. Perform the offline phase
 #lifting_mu = (1e-1, )
@@ -278,6 +282,8 @@ pod_galerkin_method.set_Nmax(params["rom"]["Nmax"])
 pod_galerkin_method.initialize_training_set(1)
 reduced_navier_stokes_unsteady_problem = pod_galerkin_method.offline()
 navier_stokes_unsteady_problem.offline = False
+print("4: POD offline done")
+
 # print("GROM")
 # 6. Perform an online solve
 # online_mu = (1e-2, )
