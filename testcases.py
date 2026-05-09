@@ -4,7 +4,7 @@
 #
 #
 from dolfin import *
-
+import numpy as np
 
 class TestCase:
     
@@ -37,13 +37,38 @@ class TestCase:
 
 class CylinderFlowCase(TestCase):
     def __init__(self, mesh_label):
-        # Read the mesh for this problem
-        path = "data_cylinder"
+
+        path = "meshes/"+mesh_label #
   
-        self.mesh = Mesh("data_cylinder/Cylinder_refined_"+mesh_label+".xml")
-        self.subdomains = MeshFunction("size_t", self.mesh, path+"/Cylinder_refined_physical_region_"+mesh_label+".xml")
-        self.boundaries = MeshFunction("size_t", self.mesh, path+"/Cylinder_refined_facet_region_"+mesh_label + ".xml")
-        print(self.mesh.hmax(), self.mesh.hmin())
+        mesh = Mesh()
+
+        with XDMFFile(path+"/mesh.xdmf") as infile:
+            infile.read(mesh)
+
+        mvc_boundaries = MeshValueCollection("size_t", mesh, 1)
+        mvc_subdomains = MeshValueCollection("size_t", mesh, 2)
+        
+        with XDMFFile(path+"/facet_region.xdmf") as infile:
+            infile.read(mvc_boundaries, "name_to_read")
+        with XDMFFile(path + "/physical_region.xdmf") as infile:
+            infile.read(mvc_subdomains, "name_to_read")
+
+        self.boundaries = cpp.mesh.MeshFunctionSizet(mesh, mvc_boundaries)
+        self.subdomains = cpp.mesh.MeshFunctionSizet(mesh, mvc_subdomains)       
+        self.mesh = mesh
+
+        for f in facets(mesh):
+            if f.exterior():
+                marker = self.boundaries[f]
+                if marker > 1000:
+                    print("Unmarked exterior facet:", f.index())
+                    print("midpoint:", f.midpoint().x(), f.midpoint().y())
+
+ 
+        #self.mesh = Mesh(path+"/mesh.xml")
+        #self.subdomains = MeshFunction("size_t", self.mesh, path+"/physical_region.xml")
+        #self.boundaries = MeshFunction("size_t", self.mesh, path+"/facet_region.xml")
+        #print(self.mesh.hmax(), self.mesh.hmin())
 
 
     def InitialCondition(self, V):
@@ -51,6 +76,7 @@ class CylinderFlowCase(TestCase):
         return solution
 
     def BoundaryConditions(self,V):
+
         self.inlet = Expression(("6.0/((0.41)*(0.41))*x[1]*(0.41 - x[1])", "0."), 
                                 element=V.sub(0).ufl_element())
 
