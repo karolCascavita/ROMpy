@@ -16,6 +16,10 @@
 # along with RBniCS. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
+import json
+import shutil
+
 from dolfin import *
 from rbnics import *
 from testcases import *

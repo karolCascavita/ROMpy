@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with RBniCS. If not, see <http://www.gnu.org/licenses/>.
 #
+import os
+import json
+import shutil
 
 from dolfin import *
 from rbnics import *
