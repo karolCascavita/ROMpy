@@ -12,7 +12,8 @@
         }
     },
     "rom": {
-        "Nmax": 200
+        "Nmax": 20,
+        "N":20
     },
 
     "output_dir": "CYLINDER_H1"

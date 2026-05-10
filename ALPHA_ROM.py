@@ -24,6 +24,28 @@ from rbnics import *
 from testcases import *
 
 
+def rom_summary(outputdir, desired_N, Nu_avl, Np_avl, Ns_avl, Nu, Ns, Np):
+
+    output_file = outputdir +"/rom_summary.text"
+
+    with open(output_file, "w") as f:
+
+        f.write("\n")
+        f.write(f"Requested nummber of modes: {desired_N}\n")
+
+        f.write("\n")
+        f.write("Available POD modes:\n")
+        f.write(f"  u velocity modes     : {Nu_avl}\n")
+        f.write(f"  p pressure modes     : {Np_avl}\n")
+        f.write(f"  s supremizer modes   : {Ns_avl}\n")
+
+        f.write("\n")
+        f.write("Selected POD modes:\n")
+        f.write(f"  u velocity modes     : {Nu}\n")
+        f.write(f"  p pressure modes     : {Np}\n")
+        f.write(f"  s supremizer modes   : {Ns}\n")
+        
+
 @ExactParametrizedFunctions()
 class NavierStokesUnsteady(NavierStokesUnsteadyProblem):
     
@@ -285,12 +307,23 @@ print("4: POD offline done")
 # 6. Perform an online solve
 # online_mu = (1e-2, )
 # reduced_navier_stokes_unsteady_problem.set_mu(online_mu)
-for j in [20]:
-    k = j
-    k_p = 20
+Nu_available = reduced_navier_stokes_unsteady_problem.N["u"]
+Np_available = reduced_navier_stokes_unsteady_problem.N["p"]
+Ns_available = reduced_navier_stokes_unsteady_problem.N["s"]
+
+N = params["rom"]["N"] #to be generalized
+
+for j in [N]:
+
+    Nu = min(j, Nu_available)
+    Np = min(j, Np_available)    
+    Ns = min(j, Ns_available)
+
+    rom_summary(output_dir, N, Nu_available, Np_available, Ns_available, Nu, Np, Ns)
+
     delta_str = ""
-    reduced_navier_stokes_unsteady_problem.solve(u = k, s=k_p, p=k_p)
-    reduced_navier_stokes_unsteady_problem.export_solution(filename="online_solution" + str(k) + delta_str)
+    reduced_navier_stokes_unsteady_problem.solve(u = Nu, s=Ns, p=Np)
+    reduced_navier_stokes_unsteady_problem.export_solution(filename="online_solution" + str(Nu) + delta_str)
 
 print("5: POD online done")
 
