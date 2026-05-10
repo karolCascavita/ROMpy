@@ -257,7 +257,7 @@ with open("parameters.json", "r") as f:
     params = json.load(f)
 
 # 1 Create case
-testcase = CylinderFlowCase("Michele")
+testcase = CylinderFlowCase(params["fom"]["meshname"])
 print("1. MESH and BC's done")
 
 # 2. Create Finite Element space for Stokes problem (Taylor-Hood P2-P1)
