@@ -37,8 +37,8 @@ class NavierStokesUnsteadyLeray(NavierStokesUnsteadyProblem):
         self.dx = Measure("dx")(subdomain_data=self.subdomains)
         self.ds = Measure("ds")(subdomain_data=self.boundaries)
         #
-        self.f = testcase.Forcing(V)
-        self.g = testcase.g(V)
+        self.f = self.testcase.Forcing(V)
+        self.g = self.testcase.g(V)
         
         self.hmin = self.mesh.hmin()
         self.delta = 2*self.hmin**2
@@ -425,8 +425,8 @@ class NavierStokesUnsteadyOmega(NavierStokesUnsteadyProblem):
         self.dx = Measure("dx")(subdomain_data=self.subdomains)
         self.ds = Measure("ds")(subdomain_data=self.boundaries)
         #
-        self.f = testcase.Forcing(V)
-        self.g = testcase.g(V)
+        self.f = self.testcase.Forcing(V)
+        self.g = self.testcase.g(V)
         
         self.hmin = self.mesh.hmin()
         self.delta = 2*self.hmin**2

@@ -13,8 +13,9 @@
         }
     },
     "rom": {
-        "Nmax": 20,
-        "N":20
+        "Nmax": 200,
+        "N":20,
+        "do_online": false
     },
 
     "output_dir": "CYLINDER_H1"

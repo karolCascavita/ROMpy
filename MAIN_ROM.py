@@ -18,6 +18,7 @@
 import os
 import json
 import shutil
+import sys
 
 from dolfin import *
 from rbnics import *
@@ -120,6 +121,11 @@ pod.initialize_training_set(1)
 nsu_rom = pod.offline()
 nsu_fom.offline = False
 print("4: POD offline done")
+
+do_rom = params["rom"]["do_online"]
+if ~do_rom:
+    print("ROM disabled. Exiting program.")
+    sys.exit()
 
 # 6. Perform an online solve
 # online_mu = (1e-2, )
