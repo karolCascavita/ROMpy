@@ -199,6 +199,10 @@ class NavierStokesUnsteadyLeray(NavierStokesModelBase):
     MODEL_NAME = "LERAY"
 
     def assemble_b(self):
+
+        print("assemble b")
+
+        dx = self.dx
         u = self.du
         q = self.q
         b0 = - q*div(u)*dx
@@ -207,6 +211,9 @@ class NavierStokesUnsteadyLeray(NavierStokesModelBase):
    
     # Return forms resulting from the discretization of the affine expansion of the problem operators.
     def assemble_c(self):
+
+        print("assemble c")
+
         dx = self.dx
         u = self.u
         v = self.v
@@ -225,18 +232,24 @@ class NavierStokesUnsteadyAlpha(NavierStokesModelBase):
     MODEL_NAME = "ALPHA"
 
     def assemble_b(self):
-        q = self.q
-        ubar = self.ubar
+
+        print("assemble b")
+
+        dx = self.dx
+        q  = self.q
+        ubar = self.dubar
 
         b0 = - q*div(ubar)*dx
         return (b0,)
 
     # Return forms resulting from the discretization of the affine expansion of the problem operators.
     def assemble_c(self):
+
+        print("assemble c")
+
         dx = self.dx
-        p = self.p
-        u = self.u
-        v = self.v
+        u  = self.u
+        v  = self.v
         ubar = self.ubar
         vbar = self.vbar
         
@@ -247,8 +260,9 @@ class NavierStokesUnsteadyAlpha(NavierStokesModelBase):
         
         c0  =  inner(grad(u)*u, v)*dx
         c0l = -inner(0.5*inner(u,u), div(v))*dx + alpha_term
-        cf1 =  inner(grad(ubar), grad(vbar))*dx # + inner(ubar,vbar)*dx - inner(u, vbar)*dx
+        cf1 =  inner(grad(ubar), grad(vbar))*dx
         cf2 =  inner(ubar,vbar)*dx - inner(u, vbar)*dx
+
         return (c0, c0l, cf1, cf2)
 
 
@@ -257,8 +271,12 @@ class NavierStokesUnsteadyOmega(NavierStokesModelBase):
     MODEL_NAME = "OMEGA" 
 
     def assemble_b(self):
+
+        print("assemble b")
+
+        dx = self.dx
         q = self.q
-        u = self.u
+        u = self.du
 
         b0 = - q*div(u)*dx
         return (b0,)
@@ -266,6 +284,9 @@ class NavierStokesUnsteadyOmega(NavierStokesModelBase):
          
     # Return forms resulting from the discretization of the affine expansion of the problem operators.
     def assemble_c(self):
+
+        print("assemble c")
+
         dx = self.dx
         p = self.p
         u = self.u
