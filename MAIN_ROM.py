@@ -97,13 +97,12 @@ element = MixedElement(element_u, element_u, element_p)
 V = FunctionSpace(testcase.mesh, element, components=[["u", "s"], "u_bar", "p"])
 
 # 3. Allocate an object of the NavierStokesUnsteady class
-print("2. START fluid-dynamics solver")
+print("2. Setting fluid-dynamics solver")
 mu_range = []
 nsu_fom = make_navier_stokes_unsteady(V, params, testcase)
 nsu_fom.set_mu_range(mu_range)
 nsu_fom.set_time_step_size(params["fom"]["dt"])
 nsu_fom.set_final_time(params["fom"]["t_final"])
-print("2. END fluid-dynamics solver ")
 
 #  copy config file to results folder
 output_dir = nsu_fom.name()
@@ -114,13 +113,18 @@ pod = PODGalerkin(nsu_fom)
 pod.set_Nmax(params["rom"]["Nmax"])
 print("3: POD prepared")
 
+
 # 5. Perform the offline phase
 #lifting_mu = (1e-1, )
 #nsu_fom.set_mu(lifting_mu)
 pod.initialize_training_set(1)
+print("4: POD initialize_training_set")
 nsu_rom = pod.offline()
+print("5: POD offline done")
 nsu_fom.offline = False
-print("4: POD offline done")
+
+#Postprocessing
+nsu_fom.custom_output()
 
 do_rom = params["rom"]["do_online"]
 if ~do_rom:
