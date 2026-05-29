@@ -90,14 +90,16 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
                 "f": (1.,),
                 "g": (1.,),
                 "m": (1.,),
-                "dirichlet_bc_u": (1.,), #  t = self.t,  6/((0.41)*(0.41))
-                "dirichlet_bc_ubar": (1.,),
             }
 
         if term in constant_terms:
             return constant_terms[term]
         elif term == "c":
             return self.compute_theta_c()
+        elif term == "dirichlet_bc_u":
+            return self.testcase.BoundaryConditionsTheta(self.t)
+        elif term == "dirichlet_bc_ubar":
+            return self.testcase.BoundaryConditionsUbarTheta(self.t)
         else:
             raise ValueError("Invalid term for compute_theta().")
 

@@ -17,6 +17,12 @@ class TestCase:
     def BoundaryConditionsUbar(self, V):
         return NotImplementedError
 
+    def BoundaryConditionsTheta(self, t):
+        return NotImplementedError
+    
+    def BoundaryConditionsUbarTheta(self, t):
+        return NotImplementedError
+
     def Forcing(self, V): 
         return Constant((0.0, 0.0))    
 
@@ -77,20 +83,31 @@ class CylinderFlowCase(TestCase):
 
     def BoundaryConditions(self,V):
 
-        self.inlet = Expression(("(6.0/(0.41*0.41))*x[1]*(0.41 - x[1])", "0."), 
+        inlet = Expression(("(6.0/(0.41*0.41))*x[1]*(0.41 - x[1])", "0."), 
                                 element=V.sub(0).ufl_element())
 
         bc0 = [DirichletBC(V.sub(0), Constant((0.0, 0.0)), self.boundaries, 1),
                DirichletBC(V.sub(0), Constant((0.0, 0.0)), self.boundaries, 4), 
-               DirichletBC(V.sub(0), self.inlet          , self.boundaries, 3)]
+               DirichletBC(V.sub(0), inlet               , self.boundaries, 3)]
         
         return bc0
 
     def BoundaryConditionsUbar(self,V):
-        bc0 = [DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 3),
-               DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1), 
-               DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4)]
+
+        inlet = Expression(("(6.0/(0.41*0.41))*x[1]*(0.41 - x[1])", "0."), 
+                                element=V.sub(1).ufl_element())
+
+        bc0 = [DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1),
+               DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4), 
+               DirichletBC(V.sub(1), inlet               , self.boundaries, 3)]
+               #DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 3)]
         return bc0
+
+    def BoundaryConditionsTheta(self, t):       
+        return (np.sin(np.pi * t/8.0), )
+
+    def BoundaryConditionsUbarTheta(self, t):       
+        return (np.sin(np.pi * t/8.0),)
 
     def name(self):
         return "Cylinder" 
@@ -135,7 +152,7 @@ class TaylorVortexCase(TestCase):
 
     def BoundaryConditions(self, V):
         return [DirichletBC(V.sub(0), self.u_exact, self.boundaries, "on_boundary")]
-
+    
     def BoundaryConditionsUbar(self, V):
 
         #bc0 = [DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 3),
@@ -144,6 +161,12 @@ class TaylorVortexCase(TestCase):
         #Check this! It must be zero on the boundary?
 
         return [DirichletBC(V.sub(0), self.u_exact, self.boundaries, "on_boundary")]
+
+    def BoundaryConditionsTheta(self, t):
+        return (1.0,)
+
+    def BoundaryConditionsUbarTheta(self, t):
+        return (1.0,)
 
     def ExactSolution(self, t):
         self.u_exact.t = t
