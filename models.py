@@ -14,7 +14,7 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
 
     # Default initialization of members
     def __init__(self, V, **kwargs):
-
+        
         self.testcase   = kwargs["testcase"]
         self.parameters = kwargs["parameters"]   
 
@@ -97,26 +97,7 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
         if term in constant_terms:
             return constant_terms[term]
         elif term == "c":
-            '''   
-            if self.offline:
-                print("OFFLINE")
-                theta_c0  = 1.
-                theta_cl0 = 0.
-                theta_cl1 = 0.
-                theta_cl2 = 0.
-            else:
-                print("ONLINE")
-                theta_c0  = 0.
-                theta_cl0 = 1.
-                theta_cl1 = self.delta
-                theta_cl2 = 1.
-            '''
-            theta_c0  = 0.
-            theta_cl0 = 1.
-            theta_cf1 = self.delta
-            theta_cf2 = 1.
-            
-            return (theta_c0,theta_cl0, theta_cf1, theta_cf2)
+            return self.compute_theta_c()
         else:
             raise ValueError("Invalid term for compute_theta().")
 
@@ -179,24 +160,120 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
             bc0 = self.testcase.BoundaryConditions(self.V)
             return (bc0,)
         elif term == "dirichlet_bc_ubar":
-            bc0 = self.testcase.BoundaryConditions(self.V)
+            bc0 = self.testcase.BoundaryConditionsUbar(self.V)
             return (bc0,)
         else:
             raise ValueError("Invalid term for assemble_operator().")
 
-    '''
-    def compute_kinetic_energy(self):
+    def kinetic_energy(self):
+        return assemble(0.5*inner(self.u, self.u)*self.dx)
 
-        u = self.u
-        return assemble(0.5 * inner(u, u) * self.dx)
-    '''    
     def vorticity(self, u):
         return u[1].dx(0) - u[0].dx(1)
+
+    def sigma(self, u, p):
+        return -p*Identity(len(u)) + 2.0*self.nu*sym(grad(u))
+
+    def compute_forces(self):
+
+        n = FacetNormal(self.mesh)
+
+        sigma = self.sigma(self.u, self.p)
+
+        force = dot(sigma, n)
+
+        drag = assemble(force[0] * self.ds(4))
+        lift = assemble(force[1] * self.ds(4))
+
+        return drag, lift
+
+    def compute_force_coefficients(self):
+
+        drag, lift = self.compute_forces()
+
+        rho = 1.0
+        Umean = 1.0
+        D = 0.1
+
+        Cd = 2.0 * drag / (rho * Umean**2 * D)
+        Cl = 2.0 * lift / (rho * Umean**2 * D)
+
+        return Cd, Cl
+    
+    def custom_output(self):
+
+        times = self._solution_over_time.stored_times()
+
+        with open(os.path.join(self.name(), "forces.txt"), "w") as f:
+
+            f.write("# time Cd Cl k Div\n")
+
+            for t, w in zip(times, self._solution_over_time):
+                self.t = t
+
+                self._solution.assign(w)
+                Cd, Cl = self.compute_force_coefficients()
+                k   = self.kinetic_energy()
+                Div = assemble(div(self.u)**2*self.dx)
+                f.write(f"{t} {Cd} {Cl} {k} {Div} \n")  
+                f.flush() 
+
+        print("OUTPUT FINISHED")
+
+        return
+
+class NavierStokesUnsteady(NavierStokesModelBase):
+    
+    MODEL_NAME = "NSE"
+
+    def compute_theta_c(self):
+
+        theta_c0  = 1.
+        theta_cl0 = 0.
+        theta_cf1 = 0.
+        theta_cf2 = 0.
+        
+        return (theta_c0,theta_cl0, theta_cf1, theta_cf2)
+
+    def assemble_b(self):
+
+        print("assemble b")
+
+        dx = self.dx
+        u = self.du
+        q = self.q
+        b0 = - q*div(u)*dx
+        return (b0,)
+
+   
+    # Return forms resulting from the discretization of the affine expansion of the problem operators.
+    def assemble_c(self):
+
+        print("assemble c")
+
+        dx = self.dx
+        u = self.u
+        v = self.v
+
+        c0  = inner(grad(u)*u, v)*dx
+        cl0 = 0
+        cf1 = 0 
+        cf2 = 0
+        return (c0, cl0, cf1, cf2)
 
 
 class NavierStokesUnsteadyLeray(NavierStokesModelBase):
     
     MODEL_NAME = "LERAY"
+
+    def compute_theta_c(self):
+        theta_c0  = 0.
+        theta_cl0 = 1.
+        theta_cf1 = self.delta
+        theta_cf2 = 1.
+        
+        return (theta_c0,theta_cl0, theta_cf1, theta_cf2)
+
 
     def assemble_b(self):
 
@@ -230,6 +307,15 @@ class NavierStokesUnsteadyLeray(NavierStokesModelBase):
 class NavierStokesUnsteadyAlpha(NavierStokesModelBase):
     
     MODEL_NAME = "ALPHA"
+
+    def compute_theta_c(self):
+        theta_c0  = 0.
+        theta_cl0 = 1.
+        theta_cf1 = self.delta
+        theta_cf2 = 1.
+        
+        return (theta_c0,theta_cl0, theta_cf1, theta_cf2)
+
 
     def assemble_b(self):
 
@@ -269,6 +355,16 @@ class NavierStokesUnsteadyAlpha(NavierStokesModelBase):
 class NavierStokesUnsteadyOmega(NavierStokesModelBase):
 
     MODEL_NAME = "OMEGA" 
+
+    def compute_theta_c(self):
+
+        theta_c0  = 0.
+        theta_cl0 = 1.
+        theta_cf1 = self.delta
+        theta_cf2 = 1.
+        
+        return (theta_c0,theta_cl0, theta_cf1, theta_cf2)
+
 
     def assemble_b(self):
 
