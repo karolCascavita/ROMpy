@@ -165,62 +165,8 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
         else:
             raise ValueError("Invalid term for assemble_operator().")
 
-    def kinetic_energy(self):
-        return assemble(0.5*inner(self.u, self.u)*self.dx)
-
     def vorticity(self, u):
         return u[1].dx(0) - u[0].dx(1)
-
-    def sigma(self, u, p):
-        return -p*Identity(len(u)) + 2.0*self.nu*sym(grad(u))
-
-    def compute_forces(self):
-
-        n = FacetNormal(self.mesh)
-
-        sigma = self.sigma(self.u, self.p)
-
-        force = dot(sigma, n)
-
-        drag = assemble(force[0] * self.ds(4))
-        lift = assemble(force[1] * self.ds(4))
-
-        return drag, lift
-
-    def compute_force_coefficients(self):
-
-        drag, lift = self.compute_forces()
-
-        rho = 1.0
-        Umean = 1.0
-        D = 0.1
-
-        Cd = 2.0 * drag / (rho * Umean**2 * D)
-        Cl = 2.0 * lift / (rho * Umean**2 * D)
-
-        return Cd, Cl
-    
-    def custom_output(self):
-
-        times = self._solution_over_time.stored_times()
-
-        with open(os.path.join(self.name(), "forces.txt"), "w") as f:
-
-            f.write("# time Cd Cl k Div\n")
-
-            for t, w in zip(times, self._solution_over_time):
-                self.t = t
-
-                self._solution.assign(w)
-                Cd, Cl = self.compute_force_coefficients()
-                k   = self.kinetic_energy()
-                Div = assemble(div(self.u)**2*self.dx)
-                f.write(f"{t} {Cd} {Cl} {k} {Div} \n")  
-                f.flush() 
-
-        print("OUTPUT FINISHED")
-
-        return
 
 class NavierStokesUnsteady(NavierStokesModelBase):
     
