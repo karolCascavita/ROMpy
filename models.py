@@ -196,13 +196,42 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
 
         return Cd, Cl
     
+    class ProblemSolver(NavierStokesUnsteadyProblem.ProblemSolver):
+        def monitor(self, t, solution, solution_dot):
+            
+            print("MONITOR CALLED, t =", t)
+
+            # keep RBniCS's own bookkeeping (appends to _solution_over_time, etc.)
+            super().monitor(t, solution, solution_dot)
+
+            problem = self.problem            # <-- self here is the ProblemSolver, not the problem itself
+            problem.t = t
+            problem._solution.assign(solution)
+
+            Cd, Cl = problem.compute_force_coefficients()
+            k = problem.kinetic_energy()
+            Div = assemble(div(problem.u)**2 * problem.dx)
+
+            problem._append_force_row(t, Cd, Cl, k, Div)
+
+    def _open_forces_file(self):
+        path = os.path.join(self.name(), "forces.csv")
+        self._forces_file = open(path, "w")
+        self._forces_file.write("time, Cd, Cl, kt, Div\n")
+
+    def _append_force_row(self, t, Cd, Cl, k, Div):
+        if not hasattr(self, "_forces_file"):
+            self._open_forces_file()
+        self._forces_file.write(f"{t} {Cd} {Cl} {k} {Div}\n")
+        self._forces_file.flush()
+            
     def custom_output(self):
 
         times = self._solution_over_time.stored_times()
 
-        with open(os.path.join(self.name(), "forces.txt"), "w") as f:
+        with open(os.path.join(self.name(), "forces.csv"), "w") as f:
 
-            f.write("# time Cd Cl k Div\n")
+            f.write("time, Cd, Cl, kt, Div\n")
 
             for t, w in zip(times, self._solution_over_time):
                 self.t = t
