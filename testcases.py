@@ -9,19 +9,25 @@ import numpy as np
 class TestCase:
     
     def InitialCondition(self, V):
-        return NotImplementedError        
-            
-    def BoundaryConditions(self,V):
-        return NotImplementedError
+        raise NotImplementedError        
     
-    def BoundaryConditionsUbar(self, V):
-        return NotImplementedError
+    def BoundaryConditions_U(self, V):
+        raise NotImplementedError
 
-    def BoundaryConditionsTheta(self, t):
-        return NotImplementedError
-    
-    def BoundaryConditionsUbarTheta(self, t):
-        return NotImplementedError
+    def BoundaryConditions_P(self,V):
+        raise NotImplementedError
+
+    def BoundaryConditions_Ubar(self, V):
+        raise NotImplementedError
+
+    def BoundaryConditionsTheta_U(self, t):
+        raise NotImplementedError
+
+    def BoundaryConditionsTheta_P(self, t):
+        raise NotImplementedError
+
+    def BoundaryConditionsTheta_Ubar(self, t):
+        raise NotImplementedError
 
     def Forcing(self, V): 
         return Constant((0.0, 0.0))    
@@ -39,7 +45,7 @@ class TestCase:
         return None
     
     def name(self):
-        return NotImplementedError
+        raise NotImplementedError
 
 class CylinderFlowCase(TestCase):
     def __init__(self, mesh_label):
@@ -70,47 +76,144 @@ class CylinderFlowCase(TestCase):
                     print("Unmarked exterior facet:", f.index())
                     print("midpoint:", f.midpoint().x(), f.midpoint().y())
 
- 
-        #self.mesh = Mesh(path+"/mesh.xml")
-        #self.subdomains = MeshFunction("size_t", self.mesh, path+"/physical_region.xml")
-        #self.boundaries = MeshFunction("size_t", self.mesh, path+"/facet_region.xml")
-        #print(self.mesh.hmax(), self.mesh.hmin())
-
 
     def InitialCondition(self, V):
         solution  = Function(V)
         return solution
 
-    def BoundaryConditions(self,V):
+    def BoundaryConditions_U(self,V):
 
-        inlet = Expression(("(6.0/(0.41*0.41))*x[1]*(0.41 - x[1])", "0."), 
-                                element=V.sub(0).ufl_element())
+        zero =  Constant((0.0, 0.0))
+        self.inlet = Expression(("(6.0/(0.41*0.41))*x[1]*(0.41 - x[1])", "0."), 
+                                element=V.sub(0).ufl_element(), t = 0.0)
 
-        bc0 = [DirichletBC(V.sub(0), Constant((0.0, 0.0)), self.boundaries, 1),
-               DirichletBC(V.sub(0), Constant((0.0, 0.0)), self.boundaries, 4), 
-               DirichletBC(V.sub(0), inlet               , self.boundaries, 3)]
+        bc0 = [DirichletBC(V.sub(0), zero      , self.boundaries, 1), # walls
+               #DirichletBC(V.sub(0), self.inlet, self.boundaries, 2), # outlet
+               DirichletBC(V.sub(0), self.inlet, self.boundaries, 3), # intlet
+               DirichletBC(V.sub(0), zero      , self.boundaries, 4)] # cylinder
+        return bc0
+
+    def BoundaryConditions_P(self,V):
+        bc0 = [DirichletBC(V.sub(2), Constant(0), "near(x[0],0.0) && near(x[1],0.0)", "pointwise")] # pressure when all dirichlet
         
         return bc0
 
-    def BoundaryConditionsUbar(self,V):
+    def BoundaryConditions_Ubar(self,V):
 
-        inlet = Expression(("(6.0/(0.41*0.41))*x[1]*(0.41 - x[1])", "0."), 
-                                element=V.sub(1).ufl_element())
+        self.inlet_bar = Expression(("(6.0/(0.41*0.41))*x[1]*(0.41 - x[1])", "0."), 
+                                element=V.sub(1).ufl_element(), t = 0.0)
 
-        bc0 = [DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1),
-               DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4), 
-               DirichletBC(V.sub(1), inlet               , self.boundaries, 3)]
-               #DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 3)]
+        bc0 = [ 
+                DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1),
+                #DirichletBC(V.sub(1), self.inlet_bar      , self.boundaries, 2),
+                DirichletBC(V.sub(1), self.inlet_var      , self.boundaries, 3),
+                DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4)
+               ]
+               
         return bc0
 
-    def BoundaryConditionsTheta(self, t):       
-        return (np.sin(np.pi * t/8.0), )
+    def BoundaryConditionsTheta_U(self, t):       
+        return (1., )  
 
-    def BoundaryConditionsUbarTheta(self, t):       
-        return (np.sin(np.pi * t/8.0),)
+    def BoundaryConditionsTheta_P(self, t):       
+        return (1., )  
+
+    def BoundaryConditionsTheta_Ubar(self, t):       
+
+        # return (1.0, )  
+
+        # WARNING: Temporally set to make ubar zero to solve NSE without regularizations. 
+        # this has to be fixed
+        return (0.0, )  
 
     def name(self):
         return "Cylinder" 
+
+
+
+class CylinderFlowCaseSinProfile(TestCase):
+    def __init__(self, mesh_label):
+
+        path = "meshes/"+mesh_label #
+  
+        mesh = Mesh()
+
+        with XDMFFile(path+"/mesh.xdmf") as infile:
+            infile.read(mesh)
+
+        mvc_boundaries = MeshValueCollection("size_t", mesh, 1)
+        mvc_subdomains = MeshValueCollection("size_t", mesh, 2)
+        
+        with XDMFFile(path+"/facet_region.xdmf") as infile:
+            infile.read(mvc_boundaries, "name_to_read")
+        with XDMFFile(path + "/physical_region.xdmf") as infile:
+            infile.read(mvc_subdomains, "name_to_read")
+
+        self.boundaries = cpp.mesh.MeshFunctionSizet(mesh, mvc_boundaries)
+        self.subdomains = cpp.mesh.MeshFunctionSizet(mesh, mvc_subdomains)       
+        self.mesh = mesh
+
+        for f in facets(mesh):
+            if f.exterior():
+                marker = self.boundaries[f]
+                if marker > 1000:
+                    print("Unmarked exterior facet:", f.index())
+                    print("midpoint:", f.midpoint().x(), f.midpoint().y())
+
+    def InitialCondition(self, V):
+        solution  = Function(V)
+        return solution
+
+    def BoundaryConditions_U(self,V):
+
+        zero =  Constant((0.0, 0.0))
+
+        self.inlet_u = Expression(("(6.0/(0.41*0.41))*sin(pi*t/8.0)*x[1]*(0.41 - x[1])", "0."), 
+                                element=V.sub(0).ufl_element(), t = 0.0)
+
+        bc0 = [DirichletBC(V.sub(0), zero        , self.boundaries, 1), # walls
+               #DirichletBC(V.sub(0), self.inlet_u, self.boundaries, 2), # outlet
+               DirichletBC(V.sub(0), self.inlet_u, self.boundaries, 3), # intlet
+               DirichletBC(V.sub(0), zero        , self.boundaries, 4)] # cylinder
+        
+        return bc0
+
+    def BoundaryConditions_P(self,V):
+        bc0 = [DirichletBC(V.sub(2), Constant(0), "near(x[0],0.0) && near(x[1],0.0)", "pointwise")] # pressure when all dirichlet
+        
+        return bc0
+
+    def BoundaryConditions_Ubar(self,V):
+
+        self.inlet_ubar = Expression(("(6.0/(0.41*0.41))*sin(pi*t/8.0)*x[1]*(0.41 - x[1])", "0."), 
+                                element=V.sub(1).ufl_element(), t = 0.0)
+
+        bc0 = [ 
+                DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1), # walls
+        #        DirichletBC(V.sub(1), self.inlet_ubar     , self.boundaries, 2), # outlet
+                DirichletBC(V.sub(1), self.inlet_ubar     , self.boundaries, 3), # intlet
+                DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4), # cylinder
+               ]
+
+        return bc0
+
+    def BoundaryConditionsTheta_U(self, t):       
+        return (np.sin(np.pi * t/8.0), )
+
+    def BoundaryConditionsTheta_P(self, t): 
+        return (1.,)
+
+    def BoundaryConditionsTheta_Ubar(self, t): 
+        
+        #return (np.sin(np.pi * t/8.0),)
+        
+        # WARNING: Temporally set to make ubar zero to solve NSE without regularizations. 
+        # this has to be fixed
+        #       
+        return (0.0, ) 
+
+    def name(self):
+        return "Cylinder_SIN"
 
 
 class TaylorVortexCase(TestCase):
@@ -150,22 +253,26 @@ class TaylorVortexCase(TestCase):
         assigner.assign(solution, [u_init, u_bar_init_p_init])
         return solution
 
-    def BoundaryConditions(self, V):
-        return [DirichletBC(V.sub(0), self.u_exact, self.boundaries, "on_boundary")]
-    
-    def BoundaryConditionsUbar(self, V):
+    def BoundaryConditions_U(self, V):
+        bc0 = [DirichletBC(V.sub(0), self.u_exact, self.boundaries, "on_boundary")]
+        return bc0
 
-        #bc0 = [DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 3),
-        #       DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1), 
-        #       DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4)]
-        #Check this! It must be zero on the boundary?
+    def BoundaryConditions_P(self,V):
+        bc0 = [DirichletBC(V.sub(2), Constant(0), "near(x[0],0.0) && near(x[1],0.0)", "pointwise")] # pressure when all dirichlet        
+        return bc0
 
-        return [DirichletBC(V.sub(0), self.u_exact, self.boundaries, "on_boundary")]
+    def BoundaryConditions_Ubar(self, V):
+        bc0 = [DirichletBC(V.sub(1), self.u_exact, self.boundaries, "on_boundary")]
+        return bc0
 
-    def BoundaryConditionsTheta(self, t):
+
+    def BoundaryConditionsTheta_U(self, t):
         return (1.0,)
 
-    def BoundaryConditionsUbarTheta(self, t):
+    def BoundaryConditionsTheta_P(self, t):
+        return (1.0,)
+
+    def BoundaryConditionsTheta_Ubar(self, t):
         return (1.0,)
 
     def ExactSolution(self, t):

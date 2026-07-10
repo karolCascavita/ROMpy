@@ -97,9 +97,11 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
         elif term == "c":
             return self.compute_theta_c()
         elif term == "dirichlet_bc_u":
-            return self.testcase.BoundaryConditionsTheta(self.t)
+            return self.testcase.BoundaryConditionsTheta_U(self.t)
+        #elif term == "dirichlet_bc_p":
+        #    return self.testcase.BoundaryConditionsTheta_P(self.t)
         elif term == "dirichlet_bc_ubar":
-            return self.testcase.BoundaryConditionsUbarTheta(self.t)
+            return self.testcase.BoundaryConditionsTheta_Ubar(self.t)
         else:
             raise ValueError("Invalid term for compute_theta().")
 
@@ -124,17 +126,6 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
             return (bt0,)
         elif term == "c" : 
             return self.assemble_c()
-        elif term == "filter_lhs":
-            u = self.du
-            v = self.v
-            filter0 = inner(u, v)*dx
-            filter1 = inner(grad(u), grad(v))*dx
-            return (filter0, filter1)
-        elif term == "filter_rhs":
-            u = self.du
-            v = self.v
-            filter0 = inner(u, v)*dx
-            return (filter0,)
         elif term == "f":
             v = self.v
             f0 = inner(self.f, v)*dx
@@ -159,10 +150,13 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
             x0 = inner(p, q)*dx
             return (x0,)
         elif term == "dirichlet_bc_u":
-            bc0 = self.testcase.BoundaryConditions(self.V)
+            bc0 = self.testcase.BoundaryConditions_U(self.V)
+            return (bc0,)
+        #elif term == "dirichlet_bc_p":
+        #    bc0 = self.testcase.BoundaryConditions_P(self.V)
             return (bc0,)
         elif term == "dirichlet_bc_ubar":
-            bc0 = self.testcase.BoundaryConditionsUbar(self.V)
+            bc0 = self.testcase.BoundaryConditions_Ubar(self.V)
             return (bc0,)
         else:
             raise ValueError("Invalid term for assemble_operator().")
