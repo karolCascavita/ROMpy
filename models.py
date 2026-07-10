@@ -225,11 +225,11 @@ class NavierStokesUnsteady(NavierStokesModelBase):
     def compute_theta_c(self):
 
         theta_c0  = 1.
-        theta_cl0 = 0.
-        theta_cf1 = 0.
+
+        theta_cf1 = 1.
         theta_cf2 = 0.
         
-        return (theta_c0,theta_cl0, theta_cf1, theta_cf2)
+        return (theta_c0, theta_cf1, theta_cf2)
 
     def assemble_b(self):
 
@@ -250,12 +250,15 @@ class NavierStokesUnsteady(NavierStokesModelBase):
         dx = self.dx
         u = self.u
         v = self.v
+        ubar = self.ubar
+        vbar = self.vbar
 
         c0  = inner(grad(u)*u, v)*dx
-        cl0 = 0
-        cf1 = 0 
-        cf2 = 0
-        return (c0, cl0, cf1, cf2)
+
+        cf1 = inner(grad(ubar), grad(vbar))*dx 
+        cf2 = inner(ubar,vbar)*dx - inner(u, vbar)*dx
+
+        return (c0,  cf1, cf2)
 
 
 class NavierStokesUnsteadyLeray(NavierStokesModelBase):
@@ -295,7 +298,7 @@ class NavierStokesUnsteadyLeray(NavierStokesModelBase):
 
         c0  = inner(grad(u)*u, v)*dx
         cl0 = inner(grad(u)*ubar, v)*dx
-        cf1 = inner(grad(ubar), grad(vbar))*dx # + inner(ubar,vbar)*dx - inner(u, vbar)*dx
+        cf1 = inner(grad(ubar), grad(vbar))*dx 
         cf2 = inner(ubar,vbar)*dx - inner(u, vbar)*dx
         return (c0, cl0, cf1, cf2)
 
@@ -399,6 +402,7 @@ class NavierStokesUnsteadyOmega(NavierStokesModelBase):
 
 
 MODELS = {
+    "NSE": NavierStokesUnsteady,
     "LERAY": NavierStokesUnsteadyLeray,
     "ALPHA": NavierStokesUnsteadyAlpha,
     "OMEGA": NavierStokesUnsteadyOmega
