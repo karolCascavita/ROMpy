@@ -98,7 +98,8 @@ V = FunctionSpace(testcase.mesh, element, components=[["u", "s"], "u_bar", "p"])
 
 # 3. Allocate an object of the NavierStokesUnsteady class
 print("2. Setting fluid-dynamics solver")
-mu_range = []
+mu_fixed = params["physics"]["viscosity"]
+mu_range = [(mu_fixed, mu_fixed)] # dummy variable
 nsu_fom = make_navier_stokes_unsteady(V, params, testcase)
 nsu_fom.set_mu_range(mu_range)
 nsu_fom.set_time_step_size(params["fom"]["dt"])
@@ -126,10 +127,10 @@ nsu_fom.offline = False
 #Postprocessing
 nsu_fom.custom_output()
 
-do_rom = params["rom"]["do_online"]
-if ~do_rom:
-    print("ROM disabled. Exiting program.")
-    sys.exit()
+#do_rom = params["rom"]["do_online"]
+#if ~do_rom:
+#    print("ROM disabled. Exiting program.")
+#    sys.exit()
 
 # 6. Perform an online solve
 # online_mu = (1e-2, )
