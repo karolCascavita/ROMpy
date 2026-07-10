@@ -168,7 +168,7 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
         return u[1].dx(0) - u[0].dx(1)
 
     def sigma(self, u, p):
-        return -p*Identity(len(u)) + 2.0*self.nu*sym(grad(u))
+        return -p*Identity(len(u)) + self.nu*grad(u)
 
     def compute_forces(self):
 
@@ -176,7 +176,7 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
 
         sigma = self.sigma(self.u, self.p)
 
-        force = dot(sigma, n)
+        force = dot(sigma, -n)
 
         drag = assemble(force[0] * self.ds(4))
         lift = assemble(force[1] * self.ds(4))
