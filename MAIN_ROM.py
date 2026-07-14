@@ -24,6 +24,7 @@ from dolfin import *
 from rbnics import *
 from testcases import *
 from models import *
+from dolfin import PETScOptions
 
 
 def rom_summary(outputdir, desired_N, Nu_avl, Np_avl, Ns_avl, Nu, Ns, Np):
@@ -73,6 +74,7 @@ def CustomizeReducedNavierStokesUnsteady(ReducedNavierStokesUnsteady_Base):
             ReducedNavierStokesUnsteady_Base.__init__(self, truth_problem, **kwargs)
             self._time_stepping_parameters.update({
                 "report": True,
+                "integrator_type": "beuler",   # numpy online backend only supports
                 "nonlinear_solver": {
                     "report": True,
                     "line_search": "wolfe"
@@ -120,6 +122,7 @@ print("3: POD prepared")
 #nsu_fom.set_mu(lifting_mu)
 pod.initialize_training_set(1)
 print("4: POD initialize_training_set")
+PETScOptions.set("ts_bdf_order", "2") # Not available option in _time_stepping_parameters
 nsu_rom = pod.offline()
 print("5: POD offline done")
 nsu_fom.offline = False

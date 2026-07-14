@@ -58,12 +58,15 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
 
         self._time_stepping_parameters.update({
             "report": True,
+            "integrator_type": "bdf",
             "snes_solver": {
                 "linear_solver": "mumps",
                 "maximum_iterations": 20,
                 "report": True
             }
         })
+
+        print(self._time_stepping_parameters)
 
     # Return custom problem name
     def name(self):
