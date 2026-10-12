@@ -230,8 +230,8 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
                 self.t = t
 
                 self._solution.assign(w)
-                Cd, Cl = self.compute_force_coefficients()
-                k   = self.kinetic_energy()
+                Cd, Cl = self.compute_force_coefficients(self.u, self.p)
+                k   = self.kinetic_energy(self.u)
                 Div = assemble(div(self.u)**2*self.dx)
                 f.write(f"{t} {Cd} {Cl} {k} {Div} \n")  
                 f.flush() 
