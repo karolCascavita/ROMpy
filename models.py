@@ -42,8 +42,10 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
         self.f = self.testcase.Forcing(V)
         self.g = self.testcase.g(V)
         
-        self.hmin = self.mesh.hmin()
-        self.delta = self.hmin**2
+        delta_pow  = self.parameters["delta"]["pow"]
+        delta_coeff= self.parameters["delta"]["coefficient"]
+        self.delta = delta_coeff * self.mesh.hmin()**delta_pow
+
         self.nu = self.parameters["physics"]["viscosity"]
         self.kolmogorov =  5.62e-4
 
