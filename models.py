@@ -208,9 +208,9 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
             problem._append_force_row(t, Cd, Cl, k, Div)
 
     def _open_forces_file(self):
-        path = os.path.join(self.name(), "forces.csv")
+        path = os.path.join(self.name(), "forces_fom_live.csv")
         self._forces_file = open(path, "w")
-        self._forces_file.write("time, Cd, Cl, kt, Div\n")
+        self._forces_file.write("time Cd Cl kt Div\n")
 
     def _append_force_row(self, t, Cd, Cl, k, Div):
         if not hasattr(self, "_forces_file"):
@@ -218,13 +218,13 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
         self._forces_file.write(f"{t} {Cd} {Cl} {k} {Div}\n")
         self._forces_file.flush()
             
-    def custom_output(self):
+    def custom_output_fom(self):
 
         times = self._solution_over_time.stored_times()
 
-        with open(os.path.join(self.name(), "forces.csv"), "w") as f:
+        with open(os.path.join(self.name(), "forces_fom_end.csv"), "w") as f:
 
-            f.write("time, Cd, Cl, kt, Div\n")
+            f.write("time Cd Cl kt Div\n")
 
             for t, w in zip(times, self._solution_over_time):
                 self.t = t

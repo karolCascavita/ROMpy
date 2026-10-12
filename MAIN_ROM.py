@@ -80,6 +80,29 @@ def CustomizeReducedNavierStokesUnsteady(ReducedNavierStokesUnsteady_Base):
                     "line_search": "wolfe"
                 }
             })
+
+        def custom_output_rom(self):
+            times = self._solution_over_time.stored_times()
+            truth = self.truth_problem
+            out_path = os.path.join(truth.name(), "forces_rom.csv")
+
+            with open(out_path, "w") as f:
+                f.write("time Cd Cl kt Div\n")
+
+                for (t, solution) in zip(times, self._solution_over_time):
+                    N = solution.N                                   # per export_solution's pattern
+                    reconstructed = self.basis_functions[:N] * solution   # Function on full truth V
+                    u_N, ubar_N, p_N = split(reconstructed)           # same 3-way split as truth problem
+
+                    truth.t = t
+                    Cd, Cl = truth.compute_force_coefficients(u_N, p_N)
+                    k = truth.kinetic_energy(u_N)
+                    Div = assemble(div(u_N)**2 * truth.dx)
+
+                    f.write(f"{t} {Cd} {Cl} {k} {Div}\n")
+                    f.flush()
+
+            print("ROM OUTPUT FINISHED:", out_path)
             
     return ReducedNavierStokesUnsteady
 
@@ -97,6 +120,7 @@ element_u = VectorElement("Lagrange", testcase.mesh.ufl_cell(), 2)
 element_p = FiniteElement("Lagrange", testcase.mesh.ufl_cell(), 1)
 element = MixedElement(element_u, element_u, element_p)
 V = FunctionSpace(testcase.mesh, element, components=[["u", "s"], "u_bar", "p"])
+
 
 # 3. Allocate an object of the NavierStokesUnsteady class
 print("2. Setting fluid-dynamics solver")
@@ -128,7 +152,7 @@ print("5: POD offline done")
 nsu_fom.offline = False
 
 #Postprocessing
-nsu_fom.custom_output()
+nsu_fom.custom_output_fom()
 
 #do_rom = params["rom"]["do_online"]
 #if ~do_rom:
