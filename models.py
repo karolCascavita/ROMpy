@@ -164,31 +164,21 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
         else:
             raise ValueError("Invalid term for assemble_operator().")
 
-    def kinetic_energy(self):
-        return assemble(0.5*inner(self.u, self.u)*self.dx)
+    def kinetic_energy(self, u):
+        return assemble(0.5*inner(u, u)*self.dx)
 
     def vorticity(self, u):
         return u[1].dx(0) - u[0].dx(1)
 
-    def sigma(self, u, p):
-        return -p*Identity(len(u)) + self.nu*grad(u)
-
-    def compute_forces(self):
+    def compute_force_coefficients(self, u, p):
 
         n = FacetNormal(self.mesh)
 
-        sigma = self.sigma(self.u, self.p)
-
+        sigma = -p*Identity(len(u)) + self.nu*grad(u)
         force = dot(sigma, -n)
 
         drag = assemble(force[0] * self.ds(4))
         lift = assemble(force[1] * self.ds(4))
-
-        return drag, lift
-
-    def compute_force_coefficients(self):
-
-        drag, lift = self.compute_forces()
 
         rho = 1.0
         Umean = 1.0
@@ -211,8 +201,8 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
             problem.t = t
             problem._solution.assign(solution)
 
-            Cd, Cl = problem.compute_force_coefficients()
-            k = problem.kinetic_energy()
+            Cd, Cl = problem.compute_force_coefficients(problem.u, problem.p)
+            k = problem.kinetic_energy(problem.u)
             Div = assemble(div(problem.u)**2 * problem.dx)
 
             problem._append_force_row(t, Cd, Cl, k, Div)
