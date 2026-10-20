@@ -49,8 +49,8 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
         self.f = self.testcase.Forcing(V)
         self.g = self.testcase.g(V)
         
-        delta_pow  = self.parameters["delta"]["pow"]
-        delta_coeff= self.parameters["delta"]["coefficient"]
+        delta_pow  = self.parameters["fom"]["delta"]["pow"]
+        delta_coeff= self.parameters["fom"]["delta"]["coefficient"]
         self.delta = delta_coeff * self.mesh.hmin()**delta_pow
 
         self.nu = self.parameters["physics"]["viscosity"]
