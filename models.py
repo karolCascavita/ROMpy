@@ -1,11 +1,14 @@
 import os
 import json
 import shutil
+import numpy as np
+from petsc4py import PETSc
+
 
 from dolfin import *
 from rbnics import *
 from testcases import *
-
+from rbnics.backends.dolfin.wrapping.get_function_subspace import get_function_subspace
 
 @ExactParametrizedFunctions()
 class NavierStokesModelBase(NavierStokesUnsteadyProblem):
@@ -15,6 +18,10 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
     # Default initialization of members
     def __init__(self, V, **kwargs):
         
+        # For the initialization from snapshots: here init at zero function
+        self.ic_field_u = Function(V)  
+
+
         self.testcase   = kwargs["testcase"]
         self.parameters = kwargs["parameters"]   
 
@@ -95,6 +102,7 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
                 "f": (1.,),
                 "g": (1.,),
                 "m": (1.,),
+                "initial_condition_u": (1.,),
             }
 
         if term in constant_terms:
@@ -148,6 +156,7 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
             u = self.du
             v = self.v
             x0 = inner(grad(u), grad(v))*dx
+            #x0 = inner(u, v)*dx
             return (x0,)
         elif term == "inner_product_p":
             p = self.dp
@@ -163,6 +172,9 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
         elif term == "dirichlet_bc_ubar":
             bc0 = self.testcase.BoundaryConditions_Ubar(self.V)
             return (bc0,)
+        elif term == "initial_condition_u": 
+            # This takes ic 0 for default when start fom and it is changed after for rom
+            return (self.ic_field_u,)   
         else:
             raise ValueError("Invalid term for assemble_operator().")
 
@@ -238,9 +250,10 @@ class NavierStokesModelBase(NavierStokesUnsteadyProblem):
                 f.write(f"{t} {Cd} {Cl} {k} {Div} \n")  
                 f.flush() 
 
-        print("OUTPUT FINISHED")
+        print(" * models.py: id(nsu_fom._solution_over_time):", id(self._solution_over_time))
 
         return
+
 
 class NavierStokesUnsteady(NavierStokesModelBase):
     

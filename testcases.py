@@ -8,6 +8,10 @@ import numpy as np
 
 class TestCase:
     
+    ic_field_u = 0
+    ic_field_p = 0
+    ic_field_s = 0
+
     def InitialCondition(self, V):
         raise NotImplementedError        
     
@@ -46,6 +50,7 @@ class TestCase:
     
     def name(self):
         raise NotImplementedError
+
 
 class CylinderFlowCase(TestCase):
     def __init__(self, mesh_label):
@@ -106,7 +111,7 @@ class CylinderFlowCase(TestCase):
         bc0 = [ 
                 DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 1),
                 #DirichletBC(V.sub(1), self.inlet_bar      , self.boundaries, 2),
-                DirichletBC(V.sub(1), self.inlet_var      , self.boundaries, 3),
+                DirichletBC(V.sub(1), self.inlet_bar      , self.boundaries, 3),
                 DirichletBC(V.sub(1), Constant((0.0, 0.0)), self.boundaries, 4)
                ]
                
@@ -128,7 +133,6 @@ class CylinderFlowCase(TestCase):
 
     def name(self):
         return "Cylinder" 
-
 
 
 class CylinderFlowCaseSinProfile(TestCase):
