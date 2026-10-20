@@ -19,7 +19,9 @@
     "rom": {
         "Nmax": 200,
         "N":20,
-        "do_online": false
+        "pod_time_start": TSTART_ROM,
+        "pod_time_end": TEND_ROM,
+        "paper_pod": true
     },
 
     "output_dir": "CYLINDER_H1"
